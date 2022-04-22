@@ -1,3 +1,4 @@
+#include <iterator>
 #include <ostream>
 #include <stdio.h>
 #include <unistd.h>
@@ -6,12 +7,15 @@
 #include <iostream>
 #include <array>
 #include <cmath>
+#include "./play_sound.cpp"
 
 int main(int argc, char**argv) {
   const int SCORE_LENGTH = 5;
   const int KEYBOARD_LENGTH = 9;
   const int BLACK_LENGTH = 5;
   const int C4_OFFSET = 20;
+  
+  PlaySound audio_out = PlaySound();
 
   std::string raw_score[SCORE_LENGTH];
   struct winsize w;
@@ -81,8 +85,11 @@ int main(int argc, char**argv) {
       current_display[line] = out_text;
     }
     std::cout << std::flush;
+    std::string last_line = current_display[w.ws_row - KEYBOARD_LENGTH - 1];
+    for(int i=0; i < w.ws_row; i++){
+      if(last_line[i] != '9') audio_out.play(440, 100000);
+    }
     usleep(100000);
   }
-
   return 0;
 }

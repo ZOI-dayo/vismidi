@@ -1,2 +1,2 @@
 cd `dirname $0`
-g++ ./src/main.cpp -o ./out/main.out
+g++ -Wall ./src/main.cpp -o ./out/main.out -lopenal
