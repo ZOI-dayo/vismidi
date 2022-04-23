@@ -10,7 +10,7 @@
 #include "./play_sound.cpp"
 
 int main(int argc, char**argv) {
-  const int SCORE_LENGTH = 5;
+  const int SCORE_LENGTH = 100;
   const int KEYBOARD_LENGTH = 9;
   const int BLACK_LENGTH = 5;
   const int C4_OFFSET = 20;
@@ -28,7 +28,10 @@ int main(int argc, char**argv) {
   // Load
   for(int l = 0; l < SCORE_LENGTH; l++){
     for (int i = 0; i < w.ws_col / 2; i++) {
-      if(i == 5 || i == 20 || i == 21) raw_score[l] += '1';
+      if(30 <= l && (i == 20 || i == 24 || i == 27)) raw_score[l] += '1';
+      else if(20 <= l && l < 30 && i == 27) raw_score[l] += '1';
+      else if(10 <= l && l < 20 && i == 24) raw_score[l] += '1';
+      else if(l < 10 && i == 20) raw_score[l] += '1';
       else raw_score[l] += '9';
     }
   }
@@ -86,10 +89,16 @@ int main(int argc, char**argv) {
     }
     std::cout << std::flush;
     std::string last_line = current_display[w.ws_row - KEYBOARD_LENGTH - 1];
+    std::set<float> freqs = {};
     for(int i=0; i < w.ws_row; i++){
-      if(last_line[i] != '9') audio_out.play(440, 100000);
+      if(last_line[i] != '9'){
+        freqs.insert(440 * std::pow(2.0, (i - (C4_OFFSET + 9)) / 12.0));
+      }
     }
+    // for(float f : freqs) std::cout << f << std::endl;
+    audio_out.play(freqs, 100000);
     usleep(100000);
   }
+  audio_out.end();
   return 0;
 }
