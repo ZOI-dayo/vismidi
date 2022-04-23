@@ -31,7 +31,7 @@ int main(int argc, char**argv) {
       if(30 <= l && (i == 20 || i == 24 || i == 27)) raw_score[l] += '1';
       else if(20 <= l && l < 30 && i == 27) raw_score[l] += '1';
       else if(10 <= l && l < 20 && i == 24) raw_score[l] += '1';
-      else if(l < 10 && i == 20) raw_score[l] += '1';
+      else if(l < 5 && i == 20) raw_score[l] += '1';
       else raw_score[l] += '9';
     }
   }

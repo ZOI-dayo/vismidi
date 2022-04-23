@@ -30,7 +30,7 @@ class PlaySound {
     alGenSources(1, &source);
 
     int tone_size;
-    data = crateTone(freqs, duration, &tone_size);
+    data = crateTone(freqs, duration, &tone_size, 0.1);
 
     int data_size =  tone_size * sizeof(int16_t);
     alBufferData(buffer, AL_FORMAT_MONO16, &data[0], data_size, TONE_SAMPLINGRATE);
@@ -46,16 +46,16 @@ class PlaySound {
     // alDeleteSources(1, &source);
 
   }
-  int16_t* crateTone(std::set<float> freqs, int duration, int *tone_size)
+  int16_t* crateTone(std::set<float> freqs, int duration, int *tone_size, float volume)
   {
-    int bufsize = round(TONE_SAMPLINGRATE * duration / 1000.0);
+    int bufsize = round(TONE_SAMPLINGRATE * (duration / 250000.0)); // なぜ250000なのかは不明 100000ではなく?
     int16_t* buff = new int16_t[bufsize];
 
     for(float freq : freqs){
       double delta = (2 * M_PI * freq ) / TONE_SAMPLINGRATE;
 
       for (int i = 0; i < bufsize; i++) {
-        buff[i] += (int16_t) round(SHRT_MAX * sin(delta * i) / 10);
+        buff[i] += (int16_t) round(SHRT_MAX * sin(delta * i) * volume);
       }
     }
 
