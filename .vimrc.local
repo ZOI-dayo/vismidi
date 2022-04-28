@@ -1,3 +1,3 @@
-if system('uname') == "Darwin\n" && isdirectory('/opt/homebrew/opt/openal-soft/include/')
-  let g:ale_cpp_cc_options = "-std=gnu++20 -Wall -I/opt/homebrew/opt/openal-soft/include"
+if system('uname') == "Darwin\n"
+  let g:ale_cpp_cc_options = "-std=gnu++20 -Wall -I/opt/homebrew/opt/openal-soft/include -I../_lib/midifile/include -L../_lib/midifile/lib -lmidifile"
 endif

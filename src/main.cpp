@@ -7,53 +7,83 @@
 #include <string>
 #include <iostream>
 #include <array>
+#include <utility>
 #include <vector>
 #include <cmath>
 #include <fstream>
 #include <cstddef>
 #include <iterator>
+#include <map>
+#include "MidiEvent.h"
+#include "MidiEventList.h"
+#include "MidiFile.h"
 #include "./play_sound.cpp"
+#include "./object/note.cpp"
 
 using namespace std;
 
+/*
+   int track_count;
+   int time_delta; // 変数名 時間単位
 
-int track_count;
+   int get_data(vector<byte> *data, int begin, int count){
+   int result;
+   if(count == 1) result = to_integer<int>((*data)[0]);
+   else result = 0x100 * get_data(data, begin, count - 1) +to_integer<int>((*data)[begin + count - 1]);
+   (*data).erase((*data).begin() + begin, (*data).begin() + count);
+   return result;
+   }
+   int get_data(vector<byte> *data, int count){
+   return get_data(data, 0, count);
+   }
+   int get_data(vector<byte> *data){
+   return get_data(data, (*data).size());
+   }
+   vector<byte> string_to_byte(string data) {
+   vector<byte> result;
+   for (char c : data) {
+   result.push_back((byte) c);
+   }
+   return result;
+   }
 
-int byte_sum(vector<byte> data, int begin, int count){
-  if(count == 1) return to_integer<int>(data[0]);
-  else return 0x100 * byte_sum(data, begin, count - 1) +to_integer<int>(data[size(data)]);
+   int load(string file_path, vector<string> *raw_score)
+   {
+   ifstream ifs(file_path, ios::binary);
+
+   ifs.seekg(0, ios::end);
+   long long int size = ifs.tellg();
+   ifs.seekg(0);
+
+   vector<byte> data;
+// data.insert(data.begin(), istream_iterator<byte>(ifs), istream_iterator<byte>());
+ifs.read(reinterpret_cast<char*>(data.data()), size);
+vector<byte> MThd_byte = string_to_byte("MThd");
+if(get_data(&data, 4) != get_data(&MThd_byte)) return 1;
+if(get_data(&data, 4, 2) != 0) return 1;
+
+track_count = get_data(&data, 2);
+time_delta = get_data(&data, 2);
+
+vector<byte> MTrk_byte = string_to_byte("MTrk");
+while (!data.empty()) {
+if(get_data(&data, 4) != get_data(&MTrk_byte)) break;
+int event_data_size = get_data(&data, 4);
+
+vector<byte> event_data;
+copy(data.begin(), data.begin() + event_data_size, back_inserter(event_data));
+
+// statements
 }
-vector<byte> string_to_byte(string data) {
-  vector<byte> result;
-  for (char c : data) {
-    result.push_back((byte) c);
-  }
-  return result;
+return 0;
 }
-
-int load(string file_path, vector<string> *raw_score)
-{
-  ifstream ifs(file_path, ios::binary);
-
-  ifs.seekg(0, ios::end);
-  long long int size = ifs.tellg();
-  ifs.seekg(0);
-
-  vector<byte> data;
-  // data.insert(data.begin(), istream_iterator<byte>(ifs), istream_iterator<byte>());
-  ifs.read(reinterpret_cast<char*>(data.data()), size);
-  if(byte_sum(data, 0, 4) == byte_sum(string_to_byte("MThd"), 0, 4)) return 1;
-  if(byte_sum(data, 8, 2) != 0) return 1;
-
-  // track_count = 0x100 * data[]
-  return 0;
-}
-
+*/
 int main(int argc, char**argv) {
   // const int SCORE_LENGTH = 100;
   const int KEYBOARD_LENGTH = 9;
   const int BLACK_LENGTH = 5;
-  const int C4_OFFSET = 20;
+  const int C4_OFFSET = 30;
+  const int SCROLL_SPEED = 10;
 
   PlaySound audio_out = PlaySound();
 
@@ -66,8 +96,52 @@ int main(int argc, char**argv) {
   string current_display[w.ws_row];
 
   // Load
+  vector<Note> notes;
   vector<string> raw_score;
-  const int SCORE_LENGTH = load("/path/to/midi", &raw_score);
+  smf::MidiFile midifile;
+  midifile.read(argv[1]);
+  midifile.doTimeAnalysis();
+  double score_length_sec = 0;
+  for (int i = 0; i < midifile.size(); i++) {
+    smf::MidiEventList events = midifile[i];
+    events.linkEventPairs();
+    events.linkNotePairs();
+    score_length_sec = max(score_length_sec, events[events.size() - 1].seconds);
+    map<int, double> draft_notes;
+    for (int event_count = 0; event_count < events.size(); event_count++) {
+      smf::MidiEvent event = events[event_count];
+      if(event.isNoteOn()){
+        draft_notes[event.getKeyNumber()] = event.seconds;
+      }
+      else if(event.isNoteOff()){
+        if(draft_notes.contains(event.getKeyNumber())){
+          double start_time = draft_notes[event.getKeyNumber()];
+          draft_notes.erase(event.getKeyNumber());
+          Note note = Note(start_time, event.seconds, event.getKeyNumber());
+          notes.push_back(note);
+        }
+      }
+      // else if(event.isPressure()){event.}
+    }
+  }
+  const int SCORE_LENGTH = ceil(score_length_sec * SCROLL_SPEED);
+  const int score_width = w.ws_col / 2;
+  for(int i = 0; i < SCORE_LENGTH; i++){
+    if(raw_score.size() <= i){
+      raw_score.push_back(string(score_width, '9'));
+    }
+    double time = (double)i / SCROLL_SPEED;
+    for (Note note : notes) {
+      if(note.begin_time <= time && time <= note.end_time){
+        int note_loc = note.key_num - 60 + C4_OFFSET;
+        if(note_loc < 0) note_loc = 0;
+        if(score_width - 1 < note_loc) note_loc = score_width - 1;
+
+        raw_score[i][note_loc] = '1';
+      }
+    }
+  }
+
   /*
      for(int l = 0; l < SCORE_LENGTH; l++){
      for (int i = 0; i < w.ws_col / 2; i++) {

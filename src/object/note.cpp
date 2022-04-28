@@ -1,9 +1,9 @@
 class Note{
-  public: 
-    Note(char timbre, int note_num, float velocity) : timbre(timbre), note_num(note_num), velocity(velocity){
-    }
-  private:
-    const char timbre;
-    const int note_num;
-    const float velocity;
+  public:
+    Note(double begin_time, double end_time, int key_num): begin_time(begin_time), end_time(end_time), key_num(key_num){}
+    const double begin_time;
+    const double end_time;
+    // char timbre;
+    const int key_num;
+    // float velocity;
 };
