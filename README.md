@@ -29,8 +29,17 @@ cd vismidi
 
 ```bash
 cd somewhere/vismidi
-./out/main.out /path/to/file.midi
+./out/main.out -i /path/to/file.midi -v 10 -s 30
 ```
+
+## Option
+
+- speed
+  `-s (val)` or `--speed (val)`
+  1 <= `val` (int, [char/s], Default: 30)
+- volume
+  `-v (val)` or `--volume (val)`
+  0 <= `val` <= 100 (int, [%], Default: 10)
 
 ## Author
 

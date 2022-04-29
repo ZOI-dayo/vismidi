@@ -18,9 +18,11 @@ using namespace std;
 
 class PlaySound {
   const int TONE_SAMPLINGRATE = 44100;
-  const double MASTER_VOLUME = 0.1;
+  const double MASTER_VOLUME;
 
   public:
+  PlaySound(double volume): MASTER_VOLUME(volume){
+  }
   int get_data_size(vector<Note> notes){
     double max_time = 0;
     for (Note note : notes) {

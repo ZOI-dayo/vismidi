@@ -19,6 +19,7 @@
 #include <cstddef>
 #include <iterator>
 #include <map>
+#include <getopt.h>
 #include "MidiEvent.h"
 #include "MidiEventList.h"
 #include "MidiFile.h"
@@ -26,8 +27,8 @@
 
 using namespace std;
 
-void play(PlaySound audio_out, struct winsize w, int KEYBOARD_LENGTH, int SCROLL_SPEED){
-  audio_out.play(1000000 * (w.ws_row - KEYBOARD_LENGTH) / SCROLL_SPEED);
+void play(PlaySound audio_out, struct winsize w, int KEYBOARD_LENGTH, int scroll_speed){
+  audio_out.play(1000000 * (w.ws_row - KEYBOARD_LENGTH) / scroll_speed);
 }
 
 void abrt_handler(int sig) {
@@ -42,10 +43,32 @@ int main(int argc, char**argv) {
   // const int SCORE_LENGTH = 100;
   const int KEYBOARD_LENGTH = 9;
   const int BLACK_LENGTH = 5;
-  const int C4_OFFSET = 30;
-  const int SCROLL_SPEED = 10;
+  const int C4_OFFSET = 45;
+  int scroll_speed = 30;
+  int volume = 10;
+  const struct option longopts[] = {
+    { "volume", required_argument, 0, 'v' },
+    { "speed" , required_argument, 0, 's' },
+    { "input" , required_argument, 0, 'i' },
+    { 0       , 0                , 0,  0  }
+  };
+  int longindex = 0;
+  // opterr = 0;
+  int option_result;
+  const char* optstring = "v:s:i:";
+  string input_file;
+  while ((option_result = getopt_long(argc, argv, optstring, longopts, &longindex)) != -1){
+    if(option_result == 'v') {
+      volume = atoi(optarg);
+    }else if(option_result == 's') {
+      scroll_speed = atoi(optarg);
+    }else if(option_result == 'i') {
+      input_file = optarg;
+    }
 
-  PlaySound audio_out = PlaySound();
+  }
+
+  PlaySound audio_out = PlaySound((double) volume / 100.0);
 
   // string raw_score[SCORE_LENGTH];
   struct winsize w;
@@ -58,7 +81,7 @@ int main(int argc, char**argv) {
   vector<Note> notes;
   vector<string> raw_score;
   smf::MidiFile midifile;
-  midifile.read(argv[1]);
+  midifile.read(input_file);
   midifile.doTimeAnalysis();
   double score_length_sec = 0;
   for (int i = 0; i < midifile.size(); i++) {
@@ -89,13 +112,13 @@ int main(int argc, char**argv) {
       // else if(event.isPressure()){event.}
     }
   }
-  const int SCORE_LENGTH = ceil(score_length_sec * SCROLL_SPEED);
+  const int SCORE_LENGTH = ceil(score_length_sec * scroll_speed);
   const int score_width = w.ws_col / 2;
   for(int i = 0; i < SCORE_LENGTH; i++){
     if(raw_score.size() <= i){
       raw_score.push_back(string(score_width, '9'));
     }
-    double time = (double)i / SCROLL_SPEED;
+    double time = (double)i / scroll_speed;
     for (Note note : notes) {
       if(note.begin_time <= time && time <= note.end_time){
         int note_loc = note.key_num - 60 + C4_OFFSET;
@@ -140,7 +163,7 @@ int main(int argc, char**argv) {
   audio_out.setup(notes);
 
   // usleep(1000000);
-  thread bgm(play, audio_out, w, KEYBOARD_LENGTH, SCROLL_SPEED);
+  thread bgm(play, audio_out, w, KEYBOARD_LENGTH, scroll_speed);
 
   // Show
   chrono::time_point start_time = chrono::steady_clock::now();
@@ -169,11 +192,11 @@ int main(int argc, char**argv) {
       }
     }
     // for(float f : freqs) cout << f << endl;
-    // audio_out.play(freqs, 1000000 / SCROLL_SPEED);
+    // audio_out.play(freqs, 1000000 / scroll_speed);
     
-    chrono::time_point end_time = start_time + chrono::microseconds((1000000 / SCROLL_SPEED) * (current_loc + w.ws_row));
+    chrono::time_point end_time = start_time + chrono::microseconds((1000000 / scroll_speed) * (current_loc + w.ws_row));
     this_thread::sleep_until(end_time);
-    // usleep(1000000 / SCROLL_SPEED);
+    // usleep(1000000 / scroll_speed);
   }
   bgm.join();
   // audio_out.end();
