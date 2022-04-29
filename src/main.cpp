@@ -1,7 +1,12 @@
+#include <chrono>
+#include <ctime>
 #include <functional>
 #include <iterator>
 #include <ostream>
 #include <stdio.h>
+#include <sys/_types/_time_t.h>
+#include <sys/ttycom.h>
+#include <thread>
 #include <unistd.h>
 #include <sys/ioctl.h>
 #include <string>
@@ -18,66 +23,13 @@
 #include "MidiEventList.h"
 #include "MidiFile.h"
 #include "./play_sound.cpp"
-#include "./object/note.cpp"
 
 using namespace std;
 
-/*
-   int track_count;
-   int time_delta; // 変数名 時間単位
-
-   int get_data(vector<byte> *data, int begin, int count){
-   int result;
-   if(count == 1) result = to_integer<int>((*data)[0]);
-   else result = 0x100 * get_data(data, begin, count - 1) +to_integer<int>((*data)[begin + count - 1]);
-   (*data).erase((*data).begin() + begin, (*data).begin() + count);
-   return result;
-   }
-   int get_data(vector<byte> *data, int count){
-   return get_data(data, 0, count);
-   }
-   int get_data(vector<byte> *data){
-   return get_data(data, (*data).size());
-   }
-   vector<byte> string_to_byte(string data) {
-   vector<byte> result;
-   for (char c : data) {
-   result.push_back((byte) c);
-   }
-   return result;
-   }
-
-   int load(string file_path, vector<string> *raw_score)
-   {
-   ifstream ifs(file_path, ios::binary);
-
-   ifs.seekg(0, ios::end);
-   long long int size = ifs.tellg();
-   ifs.seekg(0);
-
-   vector<byte> data;
-// data.insert(data.begin(), istream_iterator<byte>(ifs), istream_iterator<byte>());
-ifs.read(reinterpret_cast<char*>(data.data()), size);
-vector<byte> MThd_byte = string_to_byte("MThd");
-if(get_data(&data, 4) != get_data(&MThd_byte)) return 1;
-if(get_data(&data, 4, 2) != 0) return 1;
-
-track_count = get_data(&data, 2);
-time_delta = get_data(&data, 2);
-
-vector<byte> MTrk_byte = string_to_byte("MTrk");
-while (!data.empty()) {
-if(get_data(&data, 4) != get_data(&MTrk_byte)) break;
-int event_data_size = get_data(&data, 4);
-
-vector<byte> event_data;
-copy(data.begin(), data.begin() + event_data_size, back_inserter(event_data));
-
-// statements
+void play(PlaySound audio_out, struct winsize w, int KEYBOARD_LENGTH, int SCROLL_SPEED){
+  audio_out.play(1000000 * (w.ws_row - KEYBOARD_LENGTH) / SCROLL_SPEED);
 }
-return 0;
-}
-*/
+
 int main(int argc, char**argv) {
   // const int SCORE_LENGTH = 100;
   const int KEYBOARD_LENGTH = 9;
@@ -142,18 +94,6 @@ int main(int argc, char**argv) {
     }
   }
 
-  /*
-     for(int l = 0; l < SCORE_LENGTH; l++){
-     for (int i = 0; i < w.ws_col / 2; i++) {
-     if(30 <= l && (i == 20 || i == 24 || i == 27)) raw_score[l] += '1';
-     else if(20 <= l && l < 30 && i == 27) raw_score[l] += '1';
-     else if(10 <= l && l < 20 && i == 24) raw_score[l] += '1';
-     else if(l < 5 && i == 20) raw_score[l] += '1';
-     else raw_score[l] += '9';
-     }
-     }
-     */
-
   // make piano
   string piano_lane;
   for(int i = 0; i < w.ws_col / 2; i++){
@@ -184,11 +124,13 @@ int main(int argc, char**argv) {
   // cout << "\033[49m";
   cout << flush;
 
+  audio_out.setup(notes);
 
-  usleep(1000000);
-
+  // usleep(1000000);
+  thread bgm(play, audio_out, w, KEYBOARD_LENGTH, SCROLL_SPEED);
 
   // Show
+  chrono::time_point start_time = chrono::steady_clock::now();
   for(int current_loc = - w.ws_row; current_loc < SCORE_LENGTH - KEYBOARD_LENGTH; current_loc++){
     for(int line = 0; line < w.ws_row - KEYBOARD_LENGTH; line++){
       const int index = w.ws_row - line + current_loc;
@@ -214,9 +156,13 @@ int main(int argc, char**argv) {
       }
     }
     // for(float f : freqs) cout << f << endl;
-    audio_out.play(freqs, 100000);
-    usleep(100000);
+    // audio_out.play(freqs, 1000000 / SCROLL_SPEED);
+    
+    chrono::time_point end_time = start_time + chrono::microseconds((1000000 / SCROLL_SPEED) * (current_loc + w.ws_row));
+    this_thread::sleep_until(end_time);
+    // usleep(1000000 / SCROLL_SPEED);
   }
-  audio_out.end();
+  bgm.join();
+  // audio_out.end();
   return 0;
 }
