@@ -2,6 +2,7 @@
 #include <AL/alc.h>
 #include <AL/alext.h>
 #include <array>
+#include <climits>
 #include <iostream>
 #include <math.h>
 #include <limits.h>
@@ -17,7 +18,7 @@ using namespace std;
 
 class PlaySound {
   const int TONE_SAMPLINGRATE = 44100;
-  const double MASTER_VOLUME = 0.01;
+  const double MASTER_VOLUME = 0.1;
 
   public:
   int get_data_size(vector<Note> notes){
@@ -36,8 +37,15 @@ class PlaySound {
       double freq = note.freq();
       double volume = note.volume * MASTER_VOLUME * 440 / freq;
       double delta = (2 * M_PI * freq ) / TONE_SAMPLINGRATE;
-      for (int i = start_time; i < end_time; i++) {
-        data[i] += (int16_t) round(SHRT_MAX * sin(delta * (i - start_time)) * volume);
+      int length = end_time - start_time;
+      int fixed_length = ceil((double)length * freq / TONE_SAMPLINGRATE) / freq * TONE_SAMPLINGRATE;
+      for (int i = start_time; i <= start_time + fixed_length; i++) {
+        // data[i] +=
+        int addition = round(SHRT_MAX * sin(delta * (i - start_time)) * volume);
+        int added = data[i] + addition;
+        if(added < SHRT_MIN) added = SHRT_MIN;
+        if(SHRT_MAX < added) added = SHRT_MAX;
+        data[i] = added;
       }
     }
     return data;
