@@ -30,7 +30,15 @@ void play(PlaySound audio_out, struct winsize w, int KEYBOARD_LENGTH, int SCROLL
   audio_out.play(1000000 * (w.ws_row - KEYBOARD_LENGTH) / SCROLL_SPEED);
 }
 
+void abrt_handler(int sig) {
+  cout << "\e[?12;25h" << flush;
+  abort();
+}
+
 int main(int argc, char**argv) {
+  
+  signal(SIGINT, abrt_handler);
+
   // const int SCORE_LENGTH = 100;
   const int KEYBOARD_LENGTH = 9;
   const int BLACK_LENGTH = 5;
@@ -42,8 +50,7 @@ int main(int argc, char**argv) {
   // string raw_score[SCORE_LENGTH];
   struct winsize w;
   ioctl(0, TIOCGWINSZ, &w);
-  printf("\033[2J");
-  printf("\033[%d;%dH" ,0, 0);
+  cout << "\033[2J" << "\033[0;0H" << "\e[?25l" << flush;
 
   string current_display[w.ws_row];
 
@@ -170,5 +177,6 @@ int main(int argc, char**argv) {
   }
   bgm.join();
   // audio_out.end();
+  cout << "\e[?12;25h" << endl;;
   return 0;
 }
