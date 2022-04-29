@@ -59,17 +59,23 @@ int main(int argc, char**argv) {
     events.linkEventPairs();
     events.linkNotePairs();
     score_length_sec = max(score_length_sec, events[events.size() - 1].seconds);
-    map<int, double> draft_notes;
+    struct draft_note {
+      double start_second;
+      float volume;
+    };
+    map<int, draft_note> draft_notes;
     for (int event_count = 0; event_count < events.size(); event_count++) {
       smf::MidiEvent event = events[event_count];
       if(event.isNoteOn()){
-        draft_notes[event.getKeyNumber()] = event.seconds;
+        draft_notes[event.getKeyNumber()].start_second = event.seconds;
+        draft_notes[event.getKeyNumber()].volume = event.getVelocity() / 127.0;
       }
       else if(event.isNoteOff()){
         if(draft_notes.contains(event.getKeyNumber())){
-          double start_time = draft_notes[event.getKeyNumber()];
+          double start_second = draft_notes[event.getKeyNumber()].start_second;
+          float volume = draft_notes[event.getKeyNumber()].volume;
           draft_notes.erase(event.getKeyNumber());
-          Note note = Note(start_time, event.seconds, event.getKeyNumber());
+          Note note = Note(start_second, event.seconds, event.getKeyNumber(), volume);
           notes.push_back(note);
         }
       }

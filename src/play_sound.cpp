@@ -1,7 +1,6 @@
 #include <AL/al.h>
 #include <AL/alc.h>
 #include <AL/alext.h>
-// #include <bits/stdint-intn.h>
 #include <array>
 #include <iostream>
 #include <math.h>
@@ -18,6 +17,8 @@ using namespace std;
 
 class PlaySound {
   const int TONE_SAMPLINGRATE = 44100;
+  const double MASTER_VOLUME = 0.01;
+
   public:
   int get_data_size(vector<Note> notes){
     double max_time = 0;
@@ -33,7 +34,7 @@ class PlaySound {
       int start_time = note.begin_time * TONE_SAMPLINGRATE;
       int end_time = note.end_time * TONE_SAMPLINGRATE;
       double freq = note.freq();
-      double volume = 0.01;
+      double volume = note.volume * MASTER_VOLUME * 440 / freq;
       double delta = (2 * M_PI * freq ) / TONE_SAMPLINGRATE;
       for (int i = start_time; i < end_time; i++) {
         data[i] += (int16_t) round(SHRT_MAX * sin(delta * (i - start_time)) * volume);
@@ -57,7 +58,7 @@ class PlaySound {
     // int tone_size;
     // data = crateTone(freqs, duration, &tone_size, 0.1);
 
-    alBufferData(buffer, AL_FORMAT_MONO16, data.data(), size, TONE_SAMPLINGRATE);
+    alBufferData(buffer, AL_FORMAT_MONO16, data.data(), size * 2, TONE_SAMPLINGRATE); // なぜか2...
 
     alSourcei(source, AL_BUFFER, buffer);
   }
