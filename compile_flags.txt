@@ -1,6 +1,11 @@
 -std=gnu++20
--Wall
 -I/opt/homebrew/opt/openal-soft/include
 -I../_lib/midifile/include
 -L../_lib/midifile/lib
 -lmidifile
+-Wall
+./src/main.cpp
+-o ./out/main.out
+-I/opt/homebrew/Cellar/openal-soft/1.22.2/include
+-L/opt/homebrew/Cellar/openal-soft/1.22.2/lib
+

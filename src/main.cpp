@@ -101,7 +101,7 @@ int main(int argc, char**argv) {
         draft_notes[event.getKeyNumber()].volume = event.getVelocity() / 127.0;
       }
       else if(event.isNoteOff()){
-        if(draft_notes.contains(event.getKeyNumber())){
+        if(draft_notes.count(event.getKeyNumber()) == 0){
           double start_second = draft_notes[event.getKeyNumber()].start_second;
           float volume = draft_notes[event.getKeyNumber()].volume;
           draft_notes.erase(event.getKeyNumber());

@@ -1,0 +1,6 @@
+[submodule "libraries/midifile"]
+	path = libraries/midifile
+	url = git@github.com:craigsapp/midifile.git
+[submodule "libraries/openal-soft"]
+	path = libraries/openal-soft
+	url = git@github.com:kcat/openal-soft.git
